@@ -1,193 +1,236 @@
 <template>
-  <div class="app-wrapper">
-    <!-- 手机端：侧边栏抽屉 -->
-    <el-drawer v-model="drawerVisible" direction="ltr" size="250px" :with-header="false" custom-class="glass-drawer">
-      <div class="logo-area">⚡ CYBER PANEL</div>
-      <el-menu default-active="1" class="glass-menu" text-color="#eee" active-text-color="#00f2ea">
-        <el-menu-item index="1"><el-icon><Monitor /></el-icon>控制台</el-menu-item>
+  <div class="app-layout">
+    <!-- 手机端侧边栏 -->
+    <el-drawer v-model="drawerVisible" direction="ltr" size="240px" :with-header="false" custom-class="sidebar-drawer">
+      <div class="logo-area">Server Control</div>
+      <el-menu default-active="1" class="sidebar-menu" background-color="#001529" text-color="#a6adb4" active-text-color="#fff">
+        <el-menu-item index="1"><el-icon><Monitor /></el-icon>Dashboard</el-menu-item>
       </el-menu>
     </el-drawer>
 
-    <el-container class="main-layout">
-      <!-- PC端：侧边栏 -->
-      <el-aside width="240px" class="glass-aside hidden-xs-only">
-        <div class="logo-area">⚡ CYBER PANEL</div>
-        <el-menu default-active="1" class="glass-menu" text-color="#a0a0a0" active-text-color="#00f2ea">
+    <el-container class="main-container">
+      <!-- PC端侧边栏 (深色专业风) -->
+      <el-aside width="220px" class="pc-aside hidden-xs-only">
+        <div class="logo-area">
+          <el-icon class="logo-icon"><Odometer /></el-icon> Server Panel
+        </div>
+        <el-menu default-active="1" class="sidebar-menu" background-color="#001529" text-color="#b0b0b0" active-text-color="#fff">
           <el-menu-item index="1">
-            <el-icon><Monitor /></el-icon><span>容器管理</span>
+            <el-icon><Monitor /></el-icon><span>容器列表</span>
           </el-menu-item>
         </el-menu>
       </el-aside>
 
       <el-container>
-        <!-- 头部 -->
-        <el-header class="glass-header">
+        <!-- 头部导航 -->
+        <el-header class="app-header">
           <div class="header-left">
-            <!-- 手机端菜单按钮 -->
-            <el-button class="hidden-sm-and-up menu-btn" link @click="drawerVisible = true">
-              <el-icon size="24"><Menu /></el-icon>
+            <el-button class="hidden-sm-and-up hamburger" link @click="drawerVisible = true">
+              <el-icon size="22"><Menu /></el-icon>
             </el-button>
-            <span class="page-title">DASHBOARD</span>
+            <el-breadcrumb separator="/" class="hidden-xs-only">
+              <el-breadcrumb-item>首页</el-breadcrumb-item>
+              <el-breadcrumb-item>容器管理</el-breadcrumb-item>
+            </el-breadcrumb>
+            <span class="mobile-title hidden-sm-and-up">容器管理</span>
           </div>
-          <el-button type="primary" round class="neon-btn" @click="showCreateDialog = true">
-            <el-icon><Plus /></el-icon> <span class="hidden-xs-only">新建项目</span>
-          </el-button>
+          <div class="header-right">
+            <el-button type="primary" class="create-btn" @click="showCreateDialog = true">
+              <el-icon><Plus /></el-icon> 新建实例
+            </el-button>
+          </div>
         </el-header>
 
-        <el-main>
-          <!-- 响应式状态卡片 -->
-          <el-row :gutter="20" class="status-row">
-            <el-col :xs="24" :sm="12" :md="6" class="mb-20">
-              <div class="glass-card stat-card">
-                <div class="stat-icon cpu"><el-icon><Cpu /></el-icon></div>
-                <div class="stat-info">
-                  <div class="label">CPU Load</div>
+        <el-main class="app-main">
+          <!-- 1. 现代化仪表盘 -->
+          <el-row :gutter="20" class="mb-24">
+            <el-col :xs="24" :sm="6">
+              <el-card shadow="hover" class="data-card">
+                <div class="card-icon blue-bg"><el-icon><Cpu /></el-icon></div>
+                <div class="card-info">
+                  <div class="label">CPU 负载</div>
                   <div class="value">{{ systemStatus.cpu }}%</div>
-                  <el-progress :percentage="systemStatus.cpu" :show-text="false" :color="colors" stroke-width="4" />
                 </div>
-              </div>
+              </el-card>
             </el-col>
-            <el-col :xs="24" :sm="12" :md="6" class="mb-20">
-              <div class="glass-card stat-card">
-                <div class="stat-icon mem"><el-icon><Files /></el-icon></div>
-                <div class="stat-info">
-                  <div class="label">Memory</div>
+            <el-col :xs="24" :sm="6">
+              <el-card shadow="hover" class="data-card">
+                <div class="card-icon purple-bg"><el-icon><Files /></el-icon></div>
+                <div class="card-info">
+                  <div class="label">内存使用</div>
                   <div class="value">{{ systemStatus.memory }}%</div>
-                  <el-progress :percentage="systemStatus.memory" :show-text="false" :color="colors" stroke-width="4" />
                 </div>
-              </div>
+              </el-card>
             </el-col>
-            <el-col :xs="12" :sm="12" :md="6" class="mb-20">
-              <div class="glass-card stat-card center">
-                <div class="label">Running</div>
-                <div class="value green-glow">{{ runningCount }}</div>
-              </div>
+            <el-col :xs="12" :sm="6">
+              <el-card shadow="hover" class="data-card">
+                <div class="card-icon green-bg"><el-icon><VideoPlay /></el-icon></div>
+                <div class="card-info">
+                  <div class="label">运行中</div>
+                  <div class="value success-text">{{ runningCount }}</div>
+                </div>
+              </el-card>
             </el-col>
-            <el-col :xs="12" :sm="12" :md="6" class="mb-20">
-              <div class="glass-card stat-card center">
-                <div class="label">Total</div>
-                <div class="value">{{ projects.length }}</div>
-              </div>
+            <el-col :xs="12" :sm="6">
+              <el-card shadow="hover" class="data-card">
+                <div class="card-icon gray-bg"><el-icon><Box /></el-icon></div>
+                <div class="card-info">
+                  <div class="label">总实例</div>
+                  <div class="value">{{ projects.length }}</div>
+                </div>
+              </el-card>
             </el-col>
           </el-row>
 
-          <!-- 容器列表 -->
-          <div class="glass-card table-wrapper">
-            <div class="card-header">
-              <span class="title">Active Containers</span>
-              <el-button circle class="refresh-btn" @click="fetchProjects"><el-icon><Refresh /></el-icon></el-button>
+          <!-- 2. 功能增强的表格区域 -->
+          <el-card shadow="never" class="main-card">
+            <div class="toolbar">
+              <div class="toolbar-left">
+                <!-- 🔍 搜索功能 -->
+                <el-input 
+                  v-model="searchQuery" 
+                  placeholder="搜索容器名称..." 
+                  prefix-icon="Search" 
+                  clearable
+                  class="search-input"
+                />
+              </div>
+              <div class="toolbar-right">
+                <el-button circle @click="fetchProjects"><el-icon><Refresh /></el-icon></el-button>
+              </div>
             </div>
-            
-            <el-table :data="projects" style="width: 100%" v-loading="loading" class="glass-table">
-              <el-table-column prop="name" label="Name" min-width="140">
+
+            <el-table :data="filteredProjects" style="width: 100%" v-loading="loading" size="large">
+              <el-table-column prop="name" label="容器名称 / ID" min-width="180">
                 <template #default="scope">
-                  <div class="name-cell">
-                    <span class="status-dot" :class="scope.row.status"></span>
-                    <b>{{ scope.row.name }}</b>
+                  <div class="name-box">
+                    <span class="status-badge" :class="scope.row.status"></span>
+                    <div>
+                      <div class="project-name">{{ scope.row.name }}</div>
+                      <div class="project-id">ID: {{ scope.row.id }}</div>
+                    </div>
                   </div>
                 </template>
               </el-table-column>
               
-              <el-table-column prop="image" label="Image" min-width="150" show-overflow-tooltip>
-                 <template #default="scope"><span class="mono-text">{{ scope.row.image }}</span></template>
-              </el-table-column>
-              
-              <el-table-column label="Port / Remark" min-width="180">
+              <el-table-column label="网络端口" min-width="200">
                 <template #default="scope">
-                  <div class="port-cell">
-                    <el-tag v-if="scope.row.ports !== '无'" size="small" effect="dark" class="port-tag">{{ scope.row.ports }}</el-tag>
-                    <span v-else class="text-muted">-</span>
-                    <!-- ✅ 显示备注 -->
-                    <div v-if="scope.row.remark" class="remark-text">{{ scope.row.remark }}</div>
+                  <div v-if="scope.row.ports" class="port-wrapper">
+                    <el-tag effect="plain" class="port-tag">
+                      {{ scope.row.ports }}
+                      <!-- 📋 复制功能 -->
+                      <el-icon class="copy-icon" @click="copyText(scope.row.ports)"><CopyDocument /></el-icon>
+                    </el-tag>
+                    <div v-if="scope.row.remark" class="remark-badge">{{ scope.row.remark }}</div>
                   </div>
+                  <span v-else class="empty-text">-</span>
                 </template>
               </el-table-column>
 
-              <el-table-column label="Mount" min-width="150" class-name="hidden-xs-only">
+              <el-table-column prop="image" label="镜像" min-width="150" show-overflow-tooltip>
+                 <template #default="scope">
+                   <div class="image-text">{{ scope.row.image }}</div>
+                 </template>
+              </el-table-column>
+
+              <el-table-column label="创建时间" min-width="160" class-name="hidden-xs-only">
                 <template #default="scope">
-                  <span class="mono-text sm">{{ scope.row.mounts }}</span>
+                  <span class="time-text">{{ scope.row.created }}</span>
                 </template>
               </el-table-column>
 
-              <el-table-column label="Action" width="180" fixed="right">
+              <el-table-column label="操作" width="220" fixed="right" align="right">
                 <template #default="scope">
-                  <el-button link size="small" @click="handleLogs(scope.row)" class="action-btn">Log</el-button>
-                  <el-button link size="small" type="danger" v-if="scope.row.status === 'running'" @click="handleAction(scope.row.id, 'stop')" class="action-btn">Stop</el-button>
-                  <el-button link size="small" type="success" v-else @click="handleAction(scope.row.id, 'start')" class="action-btn">Start</el-button>
-                  <el-button link size="small" type="info" @click="handleAction(scope.row.id, 'remove')" class="action-btn">Del</el-button>
+                  <el-button-group>
+                    <el-button type="primary" plain size="small" @click="handleLogs(scope.row)">日志</el-button>
+                    <!-- 🔄 快捷重启按钮 -->
+                    <el-button type="warning" plain size="small" @click="handleAction(scope.row.id, 'restart')">重启</el-button>
+                    
+                    <el-dropdown trigger="click" @command="(cmd) => handleAction(scope.row.id, cmd)">
+                      <el-button type="info" plain size="small" class="more-btn">
+                        <el-icon><MoreFilled /></el-icon>
+                      </el-button>
+                      <template #dropdown>
+                        <el-dropdown-menu>
+                          <el-dropdown-item command="stop" v-if="scope.row.status === 'running'" style="color: #F56C6C">停止运行</el-dropdown-item>
+                          <el-dropdown-item command="start" v-else style="color: #67C23A">启动容器</el-dropdown-item>
+                          <el-dropdown-item divided command="remove">删除容器</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </template>
+                    </el-dropdown>
+                  </el-button-group>
                 </template>
               </el-table-column>
             </el-table>
-          </div>
+          </el-card>
         </el-main>
       </el-container>
     </el-container>
 
-    <!-- 新建弹窗 (深色模式) -->
-    <el-dialog v-model="showCreateDialog" title="Deploy New Container" width="90%" style="max-width: 600px" custom-class="glass-dialog">
-      <el-form :model="newItem" label-position="top">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="Name">
-              <el-input v-model="newItem.name" placeholder="my-app"></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="Image">
-              <el-select v-model="newItem.image" allow-create filterable style="width: 100%" placeholder="Select Image">
-                <el-option label="Python 3.9" value="python:3.9-slim"></el-option>
-                <el-option label="Nginx" value="nginx:latest"></el-option>
-                <el-option label="Node.js 18" value="node:18-alpine"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <div class="section-title">Networking & Remark</div>
-        <el-row :gutter="10">
-          <el-col :span="8"><el-input v-model="newItem.host_port" placeholder="Host Port"></el-input></el-col>
-          <el-col :span="2" style="text-align: center; line-height: 32px">→</el-col>
-          <el-col :span="8"><el-input v-model="newItem.container_port" placeholder="80"></el-input></el-col>
-        </el-row>
-        <!-- ✅ 新增：备注输入框 -->
-        <el-form-item label="Port Remark" style="margin-top: 10px;">
-          <el-input v-model="newItem.port_remark" placeholder="e.g. Web Admin Interface"></el-input>
+    <!-- 新建弹窗 -->
+    <el-dialog v-model="showCreateDialog" title="部署新实例" width="600px" destroy-on-close>
+      <el-form :model="newItem" label-width="100px" class="create-form">
+        <el-form-item label="名称" required>
+          <el-input v-model="newItem.name" placeholder="例如: my-website"></el-input>
+        </el-form-item>
+        
+        <el-form-item label="镜像" required>
+          <el-select v-model="newItem.image" allow-create filterable style="width: 100%" placeholder="选择或输入">
+            <el-option label="Python 3.9" value="python:3.9-slim"></el-option>
+            <el-option label="Nginx" value="nginx:latest"></el-option>
+            <el-option label="Node.js 18" value="node:18-alpine"></el-option>
+            <el-option label="Redis" value="redis:alpine"></el-option>
+          </el-select>
         </el-form-item>
 
-        <div class="section-title">Mount Volume</div>
-        <el-form-item>
-          <el-input v-model="newItem.volume_host" placeholder="Host Path (e.g. /root/code)">
-             <template #prepend>Host</template>
+        <div class="form-section-title">网络配置</div>
+        <el-form-item label="端口映射">
+          <el-row :gutter="10" style="width: 100%">
+            <el-col :span="11"><el-input v-model="newItem.host_port" placeholder="主机端口 (如 8080)"></el-input></el-col>
+            <el-col :span="2" align="center">:</el-col>
+            <el-col :span="11"><el-input v-model="newItem.container_port" placeholder="容器端口 (默认 80)"></el-input></el-col>
+          </el-row>
+        </el-form-item>
+        <el-form-item label="端口备注">
+          <el-input v-model="newItem.port_remark" placeholder="例如：博客前台"></el-input>
+        </el-form-item>
+
+        <div class="form-section-title">存储与命令</div>
+        <el-form-item label="挂载目录">
+          <el-input v-model="newItem.volume_host" placeholder="主机绝对路径">
+             <template #append>主机</template>
           </el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-input v-model="newItem.volume_container" placeholder="Container Path (e.g. /app)">
-             <template #prepend>Cont</template>
+          <div style="height: 10px"></div>
+          <el-input v-model="newItem.volume_container" placeholder="容器内路径 (如 /app)">
+             <template #append>容器</template>
           </el-input>
         </el-form-item>
 
-        <el-form-item label="Command">
-          <el-input v-model="newItem.command" placeholder="python -u main.py"></el-input>
+        <el-form-item label="启动命令">
+          <el-input v-model="newItem.command" type="textarea" :rows="2" placeholder="可选"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showCreateDialog = false" class="glass-btn">Cancel</el-button>
-        <el-button type="primary" @click="createProject" :loading="creating" class="neon-btn">Deploy</el-button>
+        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button type="primary" @click="createProject" :loading="creating">开始部署</el-button>
       </template>
     </el-dialog>
 
-    <el-dialog v-model="showLogDialog" title="Terminal Output" width="90%" custom-class="glass-dialog">
-      <div class="log-viewer"><pre>{{ logContent || 'Connecting to socket...' }}</pre></div>
+    <!-- 日志弹窗 (终端风格) -->
+    <el-dialog v-model="showLogDialog" title="Terminal Output" width="80%" top="5vh" custom-class="terminal-dialog">
+      <div class="terminal-window">
+        <pre ref="logRef">{{ logContent || '> Connecting to container logs...' }}</pre>
+      </div>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
-import { Monitor, Plus, Refresh, Menu, Cpu, Files } from '@element-plus/icons-vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
+import { Monitor, Plus, Refresh, Menu, Search, CopyDocument, MoreFilled, Odometer, Cpu, Files, VideoPlay, Box } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import 'element-plus/theme-chalk/display.css' // 引入 Element 的响应式类名
+import 'element-plus/theme-chalk/display.css'
 
 const API_BASE = '/api'
 const projects = ref([])
@@ -197,32 +240,43 @@ const showLogDialog = ref(false)
 const drawerVisible = ref(false)
 const logContent = ref('')
 const creating = ref(false)
+const searchQuery = ref('') // 🔍 搜索词
 const systemStatus = ref({ cpu: 0, memory: 0 })
+const logRef = ref(null)
 
 const defaultItem = { 
   name: '', image: 'python:3.9-slim', 
   volume_host: '', volume_container: '/app', 
   host_port: '', container_port: '', 
-  port_remark: '', // ✅ 默认值
-  command: '' 
+  port_remark: '', command: '' 
 }
 const newItem = ref({ ...defaultItem })
-const colors = '#00f2ea'
 
 const runningCount = computed(() => projects.value.filter(p => p.status === 'running').length)
+
+// 🔍 过滤逻辑
+const filteredProjects = computed(() => {
+  if (!searchQuery.value) return projects.value
+  const query = searchQuery.value.toLowerCase()
+  return projects.value.filter(p => 
+    p.name.toLowerCase().includes(query) || 
+    p.image.toLowerCase().includes(query) ||
+    (p.remark && p.remark.toLowerCase().includes(query))
+  )
+})
 
 const fetchProjects = async () => {
   loading.value = true
   try {
     const res = await axios.get(`${API_BASE}/projects`)
     projects.value = res.data
-  } catch (error) { ElMessage.error('Connect Error') } finally { loading.value = false }
+  } catch (error) { ElMessage.error('连接服务器失败') } finally { loading.value = false }
 }
 
 const fetchStatus = async () => { try { systemStatus.value = (await axios.get(`${API_BASE}/system/status`)).data } catch (e) {} }
 
 const createProject = async () => {
-  if (!newItem.value.name) return ElMessage.warning('Name Required')
+  if (!newItem.value.name) return ElMessage.warning('请输入名称')
   creating.value = true
   try {
     const payload = {
@@ -233,155 +287,111 @@ const createProject = async () => {
       container_port: newItem.value.container_port ? parseInt(newItem.value.container_port) : 80,
       volume_host: newItem.value.volume_host || null,
       volume_container: newItem.value.volume_container || null,
-      port_remark: newItem.value.port_remark || null // ✅ 传参
+      port_remark: newItem.value.port_remark || null
     }
     await axios.post(`${API_BASE}/project/create`, payload)
-    ElMessage.success('Deployed!')
+    ElMessage.success('部署成功')
     showCreateDialog.value = false
     newItem.value = { ...defaultItem }
     fetchProjects()
-  } catch (e) { ElMessage.error('Fail: ' + e.message) } finally { creating.value = false }
+  } catch (e) { ElMessage.error('失败: ' + e.message) } finally { creating.value = false }
 }
 
 const handleAction = async (id, action) => {
-  if (action === 'remove') { try { await ElMessageBox.confirm('Delete this container?', 'Warning', {type:'warning'}) } catch { return } }
-  try { await axios.post(`${API_BASE}/project/${action}`, { container_id: id }); ElMessage.success('Done'); setTimeout(fetchProjects, 1000) } catch (e) { ElMessage.error('Error') }
+  if (action === 'remove') { try { await ElMessageBox.confirm('确认删除此容器?', '警告', {type:'warning'}) } catch { return } }
+  try { await axios.post(`${API_BASE}/project/${action}`, { container_id: id }); ElMessage.success('执行成功'); setTimeout(fetchProjects, 1000) } catch (e) { ElMessage.error('执行失败') }
 }
 
 const handleLogs = (row) => {
   showLogDialog.value = true
-  logContent.value = 'Connecting...'
+  logContent.value = '> Connecting...'
   const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
   const ws = new WebSocket(`${protocol}://${window.location.host}${API_BASE}/ws/logs/${row.id}`)
-  ws.onmessage = (e) => { logContent.value = e.data }
+  ws.onmessage = (e) => { 
+    logContent.value = e.data 
+    nextTick(() => { if(logRef.value) logRef.value.scrollTop = logRef.value.scrollHeight }) // 自动滚动
+  }
   const unwatch = setInterval(() => { if (!showLogDialog.value) { ws.close(); clearInterval(unwatch) } }, 500)
+}
+
+// 📋 复制功能
+const copyText = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text.split('->')[0]) // 只复制端口号
+    ElMessage.success('端口号已复制')
+  } catch (err) { ElMessage.error('复制失败') }
 }
 
 onMounted(() => { fetchProjects(); fetchStatus(); setInterval(fetchStatus, 3000) })
 </script>
 
 <style>
-/* --- 全局前卫设计 (Global Avant-garde Styles) --- */
-:root {
-  --bg-dark: #0f172a;
-  --bg-card: rgba(30, 41, 59, 0.7);
-  --neon-blue: #00f2ea;
-  --neon-pink: #ff0050;
-  --text-main: #e2e8f0;
-  --text-muted: #94a3b8;
-}
+/* Reset & Base */
+body { margin: 0; background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1f2937; }
+.app-layout { height: 100vh; display: flex; }
 
-body {
-  margin: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-  color: var(--text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, monospace;
-  min-height: 100vh;
-}
+/* Sidebar */
+.pc-aside { background-color: #001529; color: #fff; border-right: none; box-shadow: 2px 0 6px rgba(0,21,41,.35); z-index: 10; }
+.logo-area { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff; background: #002140; }
+.logo-icon { margin-right: 8px; font-size: 20px; color: #1890ff; }
+.sidebar-menu { border-right: none !important; }
 
-/* 玻璃拟态卡片 */
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
-  padding: 20px;
-  transition: transform 0.2s;
-}
-.glass-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.1); }
+/* Header */
+.app-header { background: #fff; height: 64px; box-shadow: 0 1px 4px rgba(0,21,41,.08); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 9; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+.mobile-title { font-weight: 600; font-size: 16px; }
 
-/* 侧边栏 & 头部 */
-.glass-aside, .glass-drawer {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-right: 1px solid rgba(255,255,255,0.05);
-}
-.glass-header {
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.logo-area {
-  height: 60px; line-height: 60px; text-align: center;
-  font-weight: 900; font-size: 18px; letter-spacing: 1px;
-  background: -webkit-linear-gradient(45deg, var(--neon-blue), #fff);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
+/* Main Content */
+.app-main { padding: 24px; background-color: #f0f2f5; }
+.mb-24 { margin-bottom: 24px; }
 
-/* 统计卡片 */
-.stat-card { display: flex; align-items: center; height: 80px; }
-.stat-card.center { flex-direction: column; justify-content: center; }
-.stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 15px; }
-.stat-icon.cpu { background: rgba(0, 242, 234, 0.1); color: var(--neon-blue); }
-.stat-icon.mem { background: rgba(255, 0, 80, 0.1); color: var(--neon-pink); }
-.stat-info { flex: 1; }
-.stat-info .label, .center .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-.stat-info .value, .center .value { font-size: 24px; font-weight: bold; margin: 2px 0 5px; }
-.green-glow { color: var(--neon-blue); text-shadow: 0 0 10px rgba(0, 242, 234, 0.4); }
+/* Dashboard Cards */
+.data-card { border: none; border-radius: 8px; transition: all 0.3s; cursor: default; }
+.data-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.data-card :deep(.el-card__body) { display: flex; align-items: center; padding: 20px; }
+.card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 16px; color: #fff; }
+.blue-bg { background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); }
+.purple-bg { background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); }
+.green-bg { background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); }
+.gray-bg { background: linear-gradient(135deg, #8c8c8c 0%, #595959 100%); }
+.card-info .label { font-size: 14px; color: #8c8c8c; margin-bottom: 4px; }
+.card-info .value { font-size: 24px; font-weight: 600; color: #262626; }
+.success-text { color: #52c41a; }
 
-/* 表格样式 */
-.table-wrapper { padding: 0; overflow: hidden; }
-.glass-table {
-  background: transparent !important;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(0,0,0,0.2);
-  --el-table-text-color: var(--text-main);
-  --el-table-border-color: rgba(255,255,255,0.05);
-  --el-table-row-hover-bg-color: rgba(255,255,255,0.05) !important;
-}
-.glass-table th { color: var(--text-muted); font-weight: normal; }
-.name-cell { display: flex; align-items: center; gap: 10px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; box-shadow: 0 0 5px #555; }
-.status-dot.running { background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
-.status-dot.exited { background: var(--neon-pink); }
-.mono-text { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #a5b4fc; }
-.sm { font-size: 11px; opacity: 0.7; }
-.remark-text { font-size: 11px; color: #fbbf24; margin-top: 2px; }
+/* Table Section */
+.main-card { border: none; border-radius: 8px; }
+.toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; }
+.search-input { width: 250px; }
 
-/* 按钮与表单 */
-.neon-btn {
-  background: var(--neon-blue) !important;
-  border: none !important;
-  color: #000 !important;
-  font-weight: bold;
-  box-shadow: 0 0 15px rgba(0, 242, 234, 0.3);
-}
-.neon-btn:hover { box-shadow: 0 0 25px rgba(0, 242, 234, 0.5); transform: scale(1.05); }
-.action-btn { color: var(--text-muted) !important; }
-.action-btn:hover { color: #fff !important; }
+.name-box { display: flex; align-items: center; gap: 10px; }
+.status-badge { width: 10px; height: 10px; border-radius: 50%; display: block; background: #d9d9d9; }
+.status-badge.running { background: #52c41a; box-shadow: 0 0 4px #52c41a; }
+.project-name { font-weight: 600; font-size: 14px; color: #262626; }
+.project-id { font-size: 12px; color: #8c8c8c; font-family: monospace; }
 
-/* 弹窗与覆盖 Element 样式 */
-.el-dialog.glass-dialog {
-  background: rgba(15, 23, 42, 0.95) !important;
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 16px;
-}
-.el-dialog__title { color: #fff !important; }
-.el-form-item__label { color: var(--text-muted) !important; }
-.el-input__wrapper {
-  background: rgba(255,255,255,0.05) !important;
-  box-shadow: none !important;
-  border: 1px solid rgba(255,255,255,0.1) !important;
-}
-.el-input__inner { color: #fff !important; }
+.port-wrapper { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.port-tag { font-family: monospace; cursor: pointer; transition: all 0.2s; }
+.port-tag:hover { border-color: #409EFF; color: #409EFF; }
+.copy-icon { margin-left: 4px; font-size: 12px; vertical-align: middle; }
+.remark-badge { font-size: 12px; color: #faad14; background: #fffbe6; padding: 0 4px; border-radius: 2px; border: 1px solid #ffe58f; }
 
-/* 响应式调整 */
-.mb-20 { margin-bottom: 20px; }
-.card-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.title { font-weight: bold; font-size: 16px; }
-.log-viewer { background: #000; padding: 15px; border-radius: 8px; font-family: monospace; color: #4ade80; height: 400px; overflow: auto; }
+.image-text { color: #1f2937; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; display: inline-block; }
+.time-text { color: #6b7280; font-size: 13px; }
+.more-btn { padding: 8px; }
 
-/* Element Menu */
-.glass-menu { border-right: none !important; background: transparent !important; }
-.glass-menu .el-menu-item:hover, .glass-menu .el-menu-item.is-active { background: rgba(0, 242, 234, 0.1) !important; }
+/* Dialog Form */
+.form-section-title { font-size: 14px; font-weight: 600; color: #1f2937; margin: 15px 0 10px; border-left: 3px solid #1890ff; padding-left: 8px; }
 
+/* Terminal */
+.terminal-window { background: #1e1e1e; padding: 16px; border-radius: 6px; height: 500px; overflow: hidden; }
+.terminal-window pre { color: #4ade80; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; height: 100%; overflow-y: auto; margin: 0; white-space: pre-wrap; }
+
+/* Mobile Adapt */
 @media (max-width: 768px) {
-  .glass-header { padding: 0 15px; }
-  .page-title { font-size: 16px; }
-  .table-wrapper { border-radius: 0; border-left: none; border-right: none; }
+  .app-header { padding: 0 15px; }
+  .create-btn span { display: none; }
+  .create-btn .el-icon { margin: 0; }
+  .toolbar { flex-direction: column; gap: 10px; }
+  .search-input { width: 100%; }
 }
 </style>

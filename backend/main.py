@@ -13,7 +13,7 @@ from typing import Optional
 FRONTEND_DIST_DIR = "../frontend/dist"
 PORT = 8888
 
-app = FastAPI(title="Server Panel API")
+app = FastAPI(title="Pro Server Panel")
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,17 +38,18 @@ class ProjectCreate(BaseModel):
     container_port: int = 80
     volume_host: Optional[str] = None
     volume_container: Optional[str] = None
-    # ✅ 新增：端口备注字段
     port_remark: Optional[str] = None
 
 # --- API ---
 
 @app.get("/api/system/status")
 def get_system_status():
+    # 获取更详细的系统信息
     return {
         "cpu": psutil.cpu_percent(interval=None),
         "memory": psutil.virtual_memory().percent,
-        "disk": psutil.disk_usage('/').percent
+        "disk": psutil.disk_usage('/').percent,
+        "boot_time": psutil.boot_time()
     }
 
 @app.get("/api/projects")
@@ -58,7 +59,7 @@ def list_projects():
         containers = client.containers.list(all=True)
         results = []
         for c in containers:
-            # 1. 解析端口
+            # 解析端口
             ports_list = []
             ports_data = c.attrs['NetworkSettings']['Ports'] or {}
             for internal_proto, external_list in ports_data.items():
@@ -66,17 +67,19 @@ def list_projects():
                 if external_list:
                     for item in external_list:
                         if item.get('HostPort'):
-                            ports_list.append(f"{item['HostPort']}→{internal_port}")
+                            ports_list.append(f"{item['HostPort']}->{internal_port}")
             
-            ports_display = ", ".join(ports_list) if ports_list else "无"
+            ports_display = ", ".join(ports_list) if ports_list else ""
             
-            # 2. 解析挂载
+            # 解析挂载
             mounts = c.attrs.get('HostConfig', {}).get('Binds', [])
-            mount_display = mounts[0].split(':')[0] if mounts else "无"
+            mount_display = mounts[0].split(':')[0] if mounts else ""
 
-            # 3. ✅ 读取备注 (从 Labels 获取)
-            # 我们约定 key 为 "panel.port_remark"
+            # 读取备注
             remark = c.labels.get("panel.port_remark", "")
+            
+            # 获取创建时间 (截取前10位日期即可, 或返回完整字符串由前端处理)
+            created = c.attrs.get('Created', '')[:19].replace('T', ' ')
 
             results.append({
                 "id": c.short_id,
@@ -85,9 +88,12 @@ def list_projects():
                 "image": c.image.tags[0] if c.image.tags else "unknown",
                 "ports": ports_display,
                 "mounts": mount_display,
-                "remark": remark, # 返回给前端
-                "url": f"http://localhost:{ports_list[0].split('→')[0]}" if ports_list else ""
+                "remark": remark,
+                "created": created, # ✅ 新增字段
+                "url": f"http://localhost:{ports_list[0].split('->')[0]}" if ports_list else ""
             })
+        # 按状态排序：运行中的排前面
+        results.sort(key=lambda x: x['status'] != 'running')
         return results
     except Exception as e:
         print(f"List Error: {e}")
@@ -102,7 +108,6 @@ def create_project(project: ProjectCreate):
             "name": project.name,
             "detach": True,
             "restart_policy": {"Name": "always"},
-            # ✅ 新增：将备注写入 Labels
             "labels": {"panel.port_remark": project.port_remark or ""}
         }
 
@@ -150,7 +155,7 @@ async def websocket_endpoint(websocket: WebSocket, container_id: str):
     if not client: await websocket.close(); return
     try:
         container = client.containers.get(container_id)
-        logs = container.logs(tail=100, stream=False)
+        logs = container.logs(tail=200, stream=False)
         if logs: await websocket.send_text(logs.decode('utf-8', errors='ignore'))
         while True:
             if websocket.client_state.name == "DISCONNECTED": break
