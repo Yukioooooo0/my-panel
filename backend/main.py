@@ -15,7 +15,6 @@ PORT = 8888
 
 app = FastAPI(title="Server Panel API")
 
-# 允许跨域
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -23,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Docker 初始化
 try:
     client = docker.from_env()
     print("✅ Docker 连接成功")
@@ -36,12 +34,12 @@ class ProjectCreate(BaseModel):
     name: str
     image: str
     command: Optional[str] = None
-    # 端口配置
-    host_port: Optional[int] = None      # 宿主机端口
-    container_port: int = 80             # 容器端口 (默认80)
-    # 目录挂载配置
-    volume_host: Optional[str] = None    # 宿主机路径 (如 /root/code)
-    volume_container: Optional[str] = None # 容器内路径 (如 /app)
+    host_port: Optional[int] = None
+    container_port: int = 80
+    volume_host: Optional[str] = None
+    volume_container: Optional[str] = None
+    # ✅ 新增：端口备注字段
+    port_remark: Optional[str] = None
 
 # --- API ---
 
@@ -68,14 +66,17 @@ def list_projects():
                 if external_list:
                     for item in external_list:
                         if item.get('HostPort'):
-                            ports_list.append(f"{item['HostPort']}->{internal_port}")
+                            ports_list.append(f"{item['HostPort']}→{internal_port}")
             
-            ports_display = ", ".join(ports_list) if ports_list else "无端口"
+            ports_display = ", ".join(ports_list) if ports_list else "无"
             
-            # 2. 解析挂载 (只显示第一个挂载点，避免太长)
+            # 2. 解析挂载
             mounts = c.attrs.get('HostConfig', {}).get('Binds', [])
-            # Docker API 返回格式通常是 ["/host/path:/container/path:rw"]
-            mount_display = mounts[0].split(':')[0] if mounts else "无挂载"
+            mount_display = mounts[0].split(':')[0] if mounts else "无"
+
+            # 3. ✅ 读取备注 (从 Labels 获取)
+            # 我们约定 key 为 "panel.port_remark"
+            remark = c.labels.get("panel.port_remark", "")
 
             results.append({
                 "id": c.short_id,
@@ -84,7 +85,8 @@ def list_projects():
                 "image": c.image.tags[0] if c.image.tags else "unknown",
                 "ports": ports_display,
                 "mounts": mount_display,
-                "url": f"http://localhost:{ports_list[0].split('->')[0]}" if ports_list else ""
+                "remark": remark, # 返回给前端
+                "url": f"http://localhost:{ports_list[0].split('→')[0]}" if ports_list else ""
             })
         return results
     except Exception as e:
@@ -99,31 +101,24 @@ def create_project(project: ProjectCreate):
             "image": project.image,
             "name": project.name,
             "detach": True,
-            "restart_policy": {"Name": "always"}
+            "restart_policy": {"Name": "always"},
+            # ✅ 新增：将备注写入 Labels
+            "labels": {"panel.port_remark": project.port_remark or ""}
         }
 
-        # 1. 配置端口映射
         if project.host_port:
             kwargs['ports'] = {f"{project.container_port}/tcp": project.host_port}
 
-        # 2. 配置目录挂载
         if project.volume_host and project.volume_container:
-            # 格式: {'宿主机绝对路径': {'bind': '容器内路径', 'mode': 'rw'}}
-            kwargs['volumes'] = {
-                project.volume_host: {'bind': project.volume_container, 'mode': 'rw'}
-            }
-            # 关键：自动将容器的工作目录切换到挂载点，这样 python main.py 才能找到文件
+            kwargs['volumes'] = {project.volume_host: {'bind': project.volume_container, 'mode': 'rw'}}
             kwargs['working_dir'] = project.volume_container
 
-        # 3. 配置启动命令
         if project.command:
             kwargs['command'] = project.command
         else:
-            # 如果没填命令且是 Python 镜像，给个保活命令防止退出
             if "python" in project.image.lower():
                 kwargs['command'] = "python -c 'import time; print(\"Container Started\"); [time.sleep(60) for _ in range(100000)]'"
 
-        # 4. 拉取镜像
         try:
             client.images.get(project.image)
         except docker.errors.ImageNotFound:
@@ -155,11 +150,8 @@ async def websocket_endpoint(websocket: WebSocket, container_id: str):
     if not client: await websocket.close(); return
     try:
         container = client.containers.get(container_id)
-        # 发送历史日志
         logs = container.logs(tail=100, stream=False)
         if logs: await websocket.send_text(logs.decode('utf-8', errors='ignore'))
-        
-        # 保持连接
         while True:
             if websocket.client_state.name == "DISCONNECTED": break
             await asyncio.sleep(2)
@@ -168,7 +160,6 @@ async def websocket_endpoint(websocket: WebSocket, container_id: str):
         try: await websocket.close()
         except: pass
 
-# 托管静态文件 (必须在最后)
 if os.path.exists(FRONTEND_DIST_DIR):
     app.mount("/", StaticFiles(directory=FRONTEND_DIST_DIR, html=True), name="static")
 

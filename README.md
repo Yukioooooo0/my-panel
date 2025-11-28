@@ -36,7 +36,7 @@
 2. **使用 Docker Compose 启动**:
    在项目根目录下，执行以下命令来构建并启动所有服务：
    ```bash
-   docker-compose up -d
+   docker compose up -d --build
    ```
    `-d` 参数表示在后台运行。
 
