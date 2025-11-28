@@ -1,15 +1,22 @@
 <template>
   <div class="app-layout">
-    <!-- 手机端侧边栏 -->
-    <el-drawer v-model="drawerVisible" direction="ltr" size="240px" :with-header="false" custom-class="sidebar-drawer">
-      <div class="logo-area">Server Control</div>
+    <!-- 手机端侧边栏 (已修复颜色不一致问题) -->
+    <el-drawer 
+      v-model="drawerVisible" 
+      direction="ltr" 
+      size="240px" 
+      :with-header="false" 
+      class="sidebar-drawer" 
+      :modal-class="'sidebar-modal'"
+    >
+      <div class="logo-area mobile-logo">Server Control</div>
       <el-menu default-active="1" class="sidebar-menu" background-color="#001529" text-color="#a6adb4" active-text-color="#fff">
         <el-menu-item index="1"><el-icon><Monitor /></el-icon>Dashboard</el-menu-item>
       </el-menu>
     </el-drawer>
 
     <el-container class="main-container">
-      <!-- PC端侧边栏 (深色专业风) -->
+      <!-- PC端侧边栏 -->
       <el-aside width="220px" class="pc-aside hidden-xs-only">
         <div class="logo-area">
           <el-icon class="logo-icon"><Odometer /></el-icon> Server Panel
@@ -32,32 +39,32 @@
               <el-breadcrumb-item>首页</el-breadcrumb-item>
               <el-breadcrumb-item>容器管理</el-breadcrumb-item>
             </el-breadcrumb>
-            <span class="mobile-title hidden-sm-and-up">容器管理</span>
+            <span class="mobile-title hidden-sm-and-up">控制台</span>
           </div>
           <div class="header-right">
             <el-button type="primary" class="create-btn" @click="showCreateDialog = true">
-              <el-icon><Plus /></el-icon> 新建实例
+              <el-icon><Plus /></el-icon> <span class="hidden-xs-only">新建实例</span>
             </el-button>
           </div>
         </el-header>
 
         <el-main class="app-main">
-          <!-- 1. 现代化仪表盘 -->
-          <el-row :gutter="20" class="mb-24">
-            <el-col :xs="24" :sm="6">
+          <!-- 1. 优化后的仪表盘 (手机端双列显示，更紧凑) -->
+          <el-row :gutter="15" class="mb-15">
+            <el-col :xs="12" :sm="6">
               <el-card shadow="hover" class="data-card">
                 <div class="card-icon blue-bg"><el-icon><Cpu /></el-icon></div>
                 <div class="card-info">
-                  <div class="label">CPU 负载</div>
+                  <div class="label">CPU</div>
                   <div class="value">{{ systemStatus.cpu }}%</div>
                 </div>
               </el-card>
             </el-col>
-            <el-col :xs="24" :sm="6">
+            <el-col :xs="12" :sm="6">
               <el-card shadow="hover" class="data-card">
                 <div class="card-icon purple-bg"><el-icon><Files /></el-icon></div>
                 <div class="card-info">
-                  <div class="label">内存使用</div>
+                  <div class="label">内存</div>
                   <div class="value">{{ systemStatus.memory }}%</div>
                 </div>
               </el-card>
@@ -75,90 +82,92 @@
               <el-card shadow="hover" class="data-card">
                 <div class="card-icon gray-bg"><el-icon><Box /></el-icon></div>
                 <div class="card-info">
-                  <div class="label">总实例</div>
+                  <div class="label">总数</div>
                   <div class="value">{{ projects.length }}</div>
                 </div>
               </el-card>
             </el-col>
           </el-row>
 
-          <!-- 2. 功能增强的表格区域 -->
+          <!-- 2. 表格区域 -->
           <el-card shadow="never" class="main-card">
             <div class="toolbar">
-              <div class="toolbar-left">
-                <!-- 🔍 搜索功能 -->
-                <el-input 
-                  v-model="searchQuery" 
-                  placeholder="搜索容器名称..." 
-                  prefix-icon="Search" 
-                  clearable
-                  class="search-input"
-                />
-              </div>
-              <div class="toolbar-right">
-                <el-button circle @click="fetchProjects"><el-icon><Refresh /></el-icon></el-button>
-              </div>
+              <el-input 
+                v-model="searchQuery" 
+                placeholder="搜索名称 / 镜像 / 备注" 
+                prefix-icon="Search" 
+                clearable
+                class="search-input"
+              />
+              <el-button circle @click="fetchProjects"><el-icon><Refresh /></el-icon></el-button>
             </div>
 
             <el-table :data="filteredProjects" style="width: 100%" v-loading="loading" size="large">
-              <el-table-column prop="name" label="容器名称 / ID" min-width="180">
+              <el-table-column prop="name" label="容器信息" min-width="160">
                 <template #default="scope">
                   <div class="name-box">
                     <span class="status-badge" :class="scope.row.status"></span>
                     <div>
                       <div class="project-name">{{ scope.row.name }}</div>
-                      <div class="project-id">ID: {{ scope.row.id }}</div>
+                      <div class="project-id text-gray">{{ scope.row.image }}</div>
                     </div>
                   </div>
                 </template>
               </el-table-column>
               
-              <el-table-column label="网络端口" min-width="200">
+              <el-table-column label="端口/备注" min-width="180">
                 <template #default="scope">
                   <div v-if="scope.row.ports" class="port-wrapper">
-                    <el-tag effect="plain" class="port-tag">
-                      {{ scope.row.ports }}
-                      <!-- 📋 复制功能 -->
+                    <div class="port-row">
+                      <el-tag effect="plain" size="small" class="port-tag">
+                        {{ scope.row.ports.split(',')[0] }}
+                      </el-tag>
                       <el-icon class="copy-icon" @click="copyText(scope.row.ports)"><CopyDocument /></el-icon>
-                    </el-tag>
+                    </div>
                     <div v-if="scope.row.remark" class="remark-badge">{{ scope.row.remark }}</div>
                   </div>
                   <span v-else class="empty-text">-</span>
                 </template>
               </el-table-column>
 
-              <el-table-column prop="image" label="镜像" min-width="150" show-overflow-tooltip>
-                 <template #default="scope">
-                   <div class="image-text">{{ scope.row.image }}</div>
-                 </template>
-              </el-table-column>
-
-              <el-table-column label="创建时间" min-width="160" class-name="hidden-xs-only">
+              <!-- 手机端隐藏这一列 -->
+              <el-table-column label="创建时间" min-width="120" class-name="hidden-xs-only">
                 <template #default="scope">
                   <span class="time-text">{{ scope.row.created }}</span>
                 </template>
               </el-table-column>
 
-              <el-table-column label="操作" width="220" fixed="right" align="right">
+              <!-- 修复：操作列使用 Flex 布局，防止换行 -->
+              <el-table-column label="操作" width="160" fixed="right" align="right">
                 <template #default="scope">
-                  <el-button-group>
-                    <el-button type="primary" plain size="small" @click="handleLogs(scope.row)">日志</el-button>
-                    <!-- 🔄 快捷重启按钮 -->
-                    <el-button type="warning" plain size="small" @click="handleAction(scope.row.id, 'restart')">重启</el-button>
+                  <div class="action-box">
+                    <!-- 核心按钮1: 日志 -->
+                    <el-button link type="primary" @click="handleLogs(scope.row)">
+                      日志
+                    </el-button>
                     
+                    <!-- 核心按钮2: 启/停 -->
+                    <el-button 
+                      link 
+                      :type="scope.row.status === 'running' ? 'danger' : 'success'" 
+                      @click="handleAction(scope.row.id, scope.row.status === 'running' ? 'stop' : 'start')"
+                    >
+                      {{ scope.row.status === 'running' ? '停止' : '启动' }}
+                    </el-button>
+
+                    <!-- 更多菜单 (删除/重启) -->
                     <el-dropdown trigger="click" @command="(cmd) => handleAction(scope.row.id, cmd)">
-                      <el-button type="info" plain size="small" class="more-btn">
+                      <el-button link type="info" class="more-btn">
                         <el-icon><MoreFilled /></el-icon>
                       </el-button>
                       <template #dropdown>
                         <el-dropdown-menu>
-                          <el-dropdown-item command="stop" v-if="scope.row.status === 'running'" style="color: #F56C6C">停止运行</el-dropdown-item>
-                          <el-dropdown-item command="start" v-else style="color: #67C23A">启动容器</el-dropdown-item>
-                          <el-dropdown-item divided command="remove">删除容器</el-dropdown-item>
+                          <el-dropdown-item command="restart">🔄 重启容器</el-dropdown-item>
+                          <el-dropdown-item divided command="remove" style="color: #F56C6C">🗑️ 删除容器</el-dropdown-item>
                         </el-dropdown-menu>
                       </template>
                     </el-dropdown>
-                  </el-button-group>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
@@ -168,10 +177,10 @@
     </el-container>
 
     <!-- 新建弹窗 -->
-    <el-dialog v-model="showCreateDialog" title="部署新实例" width="600px" destroy-on-close>
-      <el-form :model="newItem" label-width="100px" class="create-form">
+    <el-dialog v-model="showCreateDialog" title="新建实例" width="600px" destroy-on-close>
+      <el-form :model="newItem" label-width="90px" class="create-form">
         <el-form-item label="名称" required>
-          <el-input v-model="newItem.name" placeholder="例如: my-website"></el-input>
+          <el-input v-model="newItem.name" placeholder="例如: my-web"></el-input>
         </el-form-item>
         
         <el-form-item label="镜像" required>
@@ -183,43 +192,48 @@
           </el-select>
         </el-form-item>
 
-        <div class="form-section-title">网络配置</div>
-        <el-form-item label="端口映射">
-          <el-row :gutter="10" style="width: 100%">
-            <el-col :span="11"><el-input v-model="newItem.host_port" placeholder="主机端口 (如 8080)"></el-input></el-col>
-            <el-col :span="2" align="center">:</el-col>
-            <el-col :span="11"><el-input v-model="newItem.container_port" placeholder="容器端口 (默认 80)"></el-input></el-col>
-          </el-row>
-        </el-form-item>
+        <el-row :gutter="10">
+          <el-col :span="12">
+            <el-form-item label="主机端口">
+              <el-input v-model="newItem.host_port" placeholder="如 8080"></el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="容器端口">
+              <el-input v-model="newItem.container_port" placeholder="默认 80"></el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-form-item label="端口备注">
-          <el-input v-model="newItem.port_remark" placeholder="例如：博客前台"></el-input>
+          <el-input v-model="newItem.port_remark" placeholder="例如：API接口"></el-input>
         </el-form-item>
 
-        <div class="form-section-title">存储与命令</div>
-        <el-form-item label="挂载目录">
-          <el-input v-model="newItem.volume_host" placeholder="主机绝对路径">
-             <template #append>主机</template>
+        <el-form-item label="挂载主机">
+          <el-input v-model="newItem.volume_host" placeholder="主机代码路径">
+             <template #prefix>📂</template>
           </el-input>
-          <div style="height: 10px"></div>
+        </el-form-item>
+        <el-form-item label="挂载容器">
           <el-input v-model="newItem.volume_container" placeholder="容器内路径 (如 /app)">
-             <template #append>容器</template>
+             <template #prefix>📦</template>
           </el-input>
         </el-form-item>
 
-        <el-form-item label="启动命令">
-          <el-input v-model="newItem.command" type="textarea" :rows="2" placeholder="可选"></el-input>
+        <el-form-item label="命令">
+          <el-input v-model="newItem.command" placeholder="可选"></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
-        <el-button type="primary" @click="createProject" :loading="creating">开始部署</el-button>
+        <el-button type="primary" @click="createProject" :loading="creating">部署</el-button>
       </template>
     </el-dialog>
 
-    <!-- 日志弹窗 (终端风格) -->
-    <el-dialog v-model="showLogDialog" title="Terminal Output" width="80%" top="5vh" custom-class="terminal-dialog">
+    <!-- 日志弹窗 -->
+    <el-dialog v-model="showLogDialog" title="实时日志" width="85%" top="5vh" custom-class="terminal-dialog">
       <div class="terminal-window">
-        <pre ref="logRef">{{ logContent || '> Connecting to container logs...' }}</pre>
+        <pre ref="logRef">{{ logContent || '> Connecting...' }}</pre>
       </div>
     </el-dialog>
   </div>
@@ -240,7 +254,7 @@ const showLogDialog = ref(false)
 const drawerVisible = ref(false)
 const logContent = ref('')
 const creating = ref(false)
-const searchQuery = ref('') // 🔍 搜索词
+const searchQuery = ref('')
 const systemStatus = ref({ cpu: 0, memory: 0 })
 const logRef = ref(null)
 
@@ -254,7 +268,6 @@ const newItem = ref({ ...defaultItem })
 
 const runningCount = computed(() => projects.value.filter(p => p.status === 'running').length)
 
-// 🔍 过滤逻辑
 const filteredProjects = computed(() => {
   if (!searchQuery.value) return projects.value
   const query = searchQuery.value.toLowerCase()
@@ -270,7 +283,7 @@ const fetchProjects = async () => {
   try {
     const res = await axios.get(`${API_BASE}/projects`)
     projects.value = res.data
-  } catch (error) { ElMessage.error('连接服务器失败') } finally { loading.value = false }
+  } catch (error) { ElMessage.error('连接失败') } finally { loading.value = false }
 }
 
 const fetchStatus = async () => { try { systemStatus.value = (await axios.get(`${API_BASE}/system/status`)).data } catch (e) {} }
@@ -290,7 +303,7 @@ const createProject = async () => {
       port_remark: newItem.value.port_remark || null
     }
     await axios.post(`${API_BASE}/project/create`, payload)
-    ElMessage.success('部署成功')
+    ElMessage.success('成功')
     showCreateDialog.value = false
     newItem.value = { ...defaultItem }
     fetchProjects()
@@ -298,8 +311,8 @@ const createProject = async () => {
 }
 
 const handleAction = async (id, action) => {
-  if (action === 'remove') { try { await ElMessageBox.confirm('确认删除此容器?', '警告', {type:'warning'}) } catch { return } }
-  try { await axios.post(`${API_BASE}/project/${action}`, { container_id: id }); ElMessage.success('执行成功'); setTimeout(fetchProjects, 1000) } catch (e) { ElMessage.error('执行失败') }
+  if (action === 'remove') { try { await ElMessageBox.confirm('删除此容器?', '警告', {type:'warning'}) } catch { return } }
+  try { await axios.post(`${API_BASE}/project/${action}`, { container_id: id }); ElMessage.success('操作成功'); setTimeout(fetchProjects, 1000) } catch (e) { ElMessage.error('失败') }
 }
 
 const handleLogs = (row) => {
@@ -309,89 +322,90 @@ const handleLogs = (row) => {
   const ws = new WebSocket(`${protocol}://${window.location.host}${API_BASE}/ws/logs/${row.id}`)
   ws.onmessage = (e) => { 
     logContent.value = e.data 
-    nextTick(() => { if(logRef.value) logRef.value.scrollTop = logRef.value.scrollHeight }) // 自动滚动
+    nextTick(() => { if(logRef.value) logRef.value.scrollTop = logRef.value.scrollHeight })
   }
   const unwatch = setInterval(() => { if (!showLogDialog.value) { ws.close(); clearInterval(unwatch) } }, 500)
 }
 
-// 📋 复制功能
 const copyText = async (text) => {
-  try {
-    await navigator.clipboard.writeText(text.split('->')[0]) // 只复制端口号
-    ElMessage.success('端口号已复制')
-  } catch (err) { ElMessage.error('复制失败') }
+  try { await navigator.clipboard.writeText(text.split('->')[0]); ElMessage.success('已复制') } catch (err) {}
 }
 
 onMounted(() => { fetchProjects(); fetchStatus(); setInterval(fetchStatus, 3000) })
 </script>
 
 <style>
-/* Reset & Base */
-body { margin: 0; background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color: #1f2937; }
+/* CSS 修复与优化 */
+
+/* 1. 全局重置 */
+body { margin: 0; background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
 .app-layout { height: 100vh; display: flex; }
 
-/* Sidebar */
-.pc-aside { background-color: #001529; color: #fff; border-right: none; box-shadow: 2px 0 6px rgba(0,21,41,.35); z-index: 10; }
-.logo-area { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff; background: #002140; }
-.logo-icon { margin-right: 8px; font-size: 20px; color: #1890ff; }
+/* 2. 侧边栏修复 */
+.pc-aside { background-color: #001529; color: #fff; box-shadow: 2px 0 6px rgba(0,21,41,.35); z-index: 10; }
+/* 关键修复：强制 Drawer 内部背景色一致 */
+.sidebar-drawer .el-drawer__body { background-color: #001529 !important; padding: 0 !important; }
 .sidebar-menu { border-right: none !important; }
+.logo-area { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #fff; background: #002140; }
+.mobile-logo { color: #fff; font-size: 18px; font-weight: bold; text-align: center; line-height: 60px; background: #002140; }
 
-/* Header */
-.app-header { background: #fff; height: 64px; box-shadow: 0 1px 4px rgba(0,21,41,.08); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 9; }
+/* 3. 头部 */
+.app-header { background: #fff; height: 64px; box-shadow: 0 1px 4px rgba(0,21,41,.08); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; }
 .header-left { display: flex; align-items: center; gap: 15px; }
-.mobile-title { font-weight: 600; font-size: 16px; }
 
-/* Main Content */
-.app-main { padding: 24px; background-color: #f0f2f5; }
-.mb-24 { margin-bottom: 24px; }
+/* 4. 内容区 */
+.app-main { padding: 20px; background-color: #f0f2f5; }
+.mb-15 { margin-bottom: 15px; }
 
-/* Dashboard Cards */
-.data-card { border: none; border-radius: 8px; transition: all 0.3s; cursor: default; }
-.data-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-.data-card :deep(.el-card__body) { display: flex; align-items: center; padding: 20px; }
-.card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 16px; color: #fff; }
-.blue-bg { background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); }
-.purple-bg { background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); }
-.green-bg { background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); }
-.gray-bg { background: linear-gradient(135deg, #8c8c8c 0%, #595959 100%); }
-.card-info .label { font-size: 14px; color: #8c8c8c; margin-bottom: 4px; }
-.card-info .value { font-size: 24px; font-weight: 600; color: #262626; }
-.success-text { color: #52c41a; }
+/* 5. 卡片优化 (移动端双列更紧凑) */
+.data-card { border: none; border-radius: 8px; margin-bottom: 10px; }
+.data-card :deep(.el-card__body) { display: flex; align-items: center; padding: 15px; }
+.card-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-right: 12px; color: #fff; }
+.blue-bg { background: #1890ff; }
+.purple-bg { background: #722ed1; }
+.green-bg { background: #52c41a; }
+.gray-bg { background: #8c8c8c; }
+.card-info .label { font-size: 12px; color: #8c8c8c; }
+.card-info .value { font-size: 20px; font-weight: 600; color: #262626; }
 
-/* Table Section */
+/* 6. 表格与按钮修复 */
 .main-card { border: none; border-radius: 8px; }
-.toolbar { display: flex; justify-content: space-between; margin-bottom: 20px; }
-.search-input { width: 250px; }
+.toolbar { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.search-input { width: 100%; max-width: 300px; }
 
-.name-box { display: flex; align-items: center; gap: 10px; }
-.status-badge { width: 10px; height: 10px; border-radius: 50%; display: block; background: #d9d9d9; }
-.status-badge.running { background: #52c41a; box-shadow: 0 0 4px #52c41a; }
+.name-box { display: flex; align-items: center; gap: 8px; }
+.status-badge { width: 8px; height: 8px; border-radius: 50%; background: #d9d9d9; flex-shrink: 0; }
+.status-badge.running { background: #52c41a; box-shadow: 0 0 3px #52c41a; }
 .project-name { font-weight: 600; font-size: 14px; color: #262626; }
-.project-id { font-size: 12px; color: #8c8c8c; font-family: monospace; }
+.text-gray { color: #8c8c8c; font-size: 12px; }
 
-.port-wrapper { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.port-tag { font-family: monospace; cursor: pointer; transition: all 0.2s; }
-.port-tag:hover { border-color: #409EFF; color: #409EFF; }
-.copy-icon { margin-left: 4px; font-size: 12px; vertical-align: middle; }
-.remark-badge { font-size: 12px; color: #faad14; background: #fffbe6; padding: 0 4px; border-radius: 2px; border: 1px solid #ffe58f; }
+.port-row { display: flex; align-items: center; gap: 4px; }
+.copy-icon { cursor: pointer; color: #409EFF; font-size: 12px; }
+.remark-badge { font-size: 11px; color: #faad14; background: #fffbe6; padding: 0 4px; border-radius: 2px; border: 1px solid #ffe58f; margin-top: 2px; display: inline-block; }
 
-.image-text { color: #1f2937; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; display: inline-block; }
-.time-text { color: #6b7280; font-size: 13px; }
-.more-btn { padding: 8px; }
+/* 关键修复：操作按钮强制一行不换行 */
+.action-box {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0px; /* 紧凑排列 */
+  white-space: nowrap;
+}
+/* 调整按钮内边距，适应小屏幕 */
+.action-box .el-button { padding: 0 5px; margin: 0; }
+.more-btn { padding: 0 5px; }
 
-/* Dialog Form */
-.form-section-title { font-size: 14px; font-weight: 600; color: #1f2937; margin: 15px 0 10px; border-left: 3px solid #1890ff; padding-left: 8px; }
+/* 7. 终端与弹窗 */
+.terminal-window { background: #1e1e1e; padding: 15px; border-radius: 6px; height: 450px; overflow: hidden; }
+.terminal-window pre { color: #4ade80; font-family: monospace; font-size: 12px; height: 100%; overflow-y: auto; margin: 0; white-space: pre-wrap; }
 
-/* Terminal */
-.terminal-window { background: #1e1e1e; padding: 16px; border-radius: 6px; height: 500px; overflow: hidden; }
-.terminal-window pre { color: #4ade80; font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 13px; height: 100%; overflow-y: auto; margin: 0; white-space: pre-wrap; }
-
-/* Mobile Adapt */
+/* 8. 移动端适配细节 */
 @media (max-width: 768px) {
   .app-header { padding: 0 15px; }
-  .create-btn span { display: none; }
-  .create-btn .el-icon { margin: 0; }
-  .toolbar { flex-direction: column; gap: 10px; }
-  .search-input { width: 100%; }
+  .create-btn { padding: 8px 12px; }
+  /* 隐藏不重要的列 */
+  .hidden-xs-only { display: none !important; }
+  /* 确保表格横向滚动 */
+  .el-table { overflow-x: auto; }
 }
 </style>
