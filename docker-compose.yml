@@ -1,0 +1,15 @@
+version: '3'
+services:
+  my-panel:
+    build: .             # 如果你在服务器上直接构建
+    # image: my-panel:v1 # 如果你推送到 DockerHub，就用这个
+    container_name: server_panel
+    restart: always
+    ports:
+      - "8888:80"        # 访问服务器 IP:8888 就能看到面板
+    volumes:
+      # 核心魔法：把宿主机的 Docker 进程接口给面板用
+      - /var/run/docker.sock:/var/run/docker.sock 
+      
+      # 可选：如果你想让面板能读写服务器上的某个目录（存放你的脚本）
+      - /home/user/my_scripts:/app/scripts
