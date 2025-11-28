@@ -182,7 +182,7 @@ const runningCount = computed(() => {
 
 // --- API 请求 ---
 // 注意：本地开发时，如果后端在 8888 端口，你需要配置代理或者直接写全路径
-const API_BASE = 'http://localhost:8888/api' 
+const API_BASE = '/api'
 
 const fetchProjects = async () => {
   loading.value = true

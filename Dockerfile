@@ -1,13 +1,13 @@
 # ---------- 第一阶段：构建前端 ----------
 # 使用 Node.js 镜像
-FROM node:18-alpine as frontend-builder
+FROM node:20-alpine as frontend-builder
 
 # 设置工作目录
 WORKDIR /app/frontend
 
 # 先只复制 package.json 安装依赖 (为了缓存，提高构建速度)
 COPY frontend/package*.json ./
-RUN npm install registry=https://registry.npmmirror.com
+RUN npm install --registry=https://registry.npmmirror.com
 
 # 复制前端所有源码并打包
 COPY frontend/ .
