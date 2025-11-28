@@ -26,8 +26,9 @@
 
 请确保您的系统中已经安装了 `Docker` 和 `Docker Compose`。
 
-1. **克隆项目到本地**:
+1. **克隆项目到服务器Ubuntu / Debian**:
    ```bash
+   apt-get update && apt-get install git -y
    git clone https://github.com/Yukioooooo0/my-panel.git
    cd my-panel
    ```
@@ -47,3 +48,6 @@
    如果需要停止所有正在运行的容器，请执行：
    ```bash
    docker-compose down
+5. **拉取最新代码**:
+   ```bash
+   git pull
